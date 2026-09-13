@@ -980,6 +980,7 @@ class OrientationValidationResult:
     unauthorized_personal_claims: list = field(default_factory=list)
     missing_core_topics: list = field(default_factory=list)
     technical_mismatches: list = field(default_factory=list)
+    name_issues: list = field(default_factory=list)
 
     def summary(self):
         if self.ok:
@@ -989,6 +990,7 @@ class OrientationValidationResult:
         if self.unauthorized_personal_claims: parts.append(f"{len(self.unauthorized_personal_claims)} μη δηλωμένα προσωπικά στοιχεία")
         if self.missing_core_topics: parts.append("λείπουν: " + ", ".join(self.missing_core_topics))
         if self.technical_mismatches: parts.append(f"{len(self.technical_mismatches)} ασυμφωνίες όψης/orb/βαρύτητας")
+        if self.name_issues: parts.append(f"{len(self.name_issues)} πρόβλημα/προβλήματα ονόματος")
         return "Ο προσανατολισμός απορρίφθηκε: " + "· ".join(parts) + "."
 
     def details_lines(self):
@@ -999,6 +1001,7 @@ class OrientationValidationResult:
             lines.append(f"Μη δηλωμένο προσωπικό στοιχείο ({category}): «{snippet}»")
         for topic in self.missing_core_topics: lines.append(f"Δεν εντοπίστηκε βασικό μέρος: {topic}.")
         for message in self.technical_mismatches: lines.append(message)
+        for message in self.name_issues: lines.append(message)
         return lines
 
 
@@ -1215,8 +1218,6 @@ def validate_orientation(chart, text: str, personal: dict | None = None,
     unauthorized=_unauthorized_personal_claims(personal,text)
     technical=_orientation_technical_mismatches(chart,text)
     name_issue = _name_consistency_issue(personal, text)
-    if name_issue:
-        technical.append(name_issue)
     if presentation_mode == "Απλή και πρακτική":
         if format_issues:
             technical.append(
@@ -1286,7 +1287,8 @@ def validate_orientation(chart, text: str, personal: dict | None = None,
             technical.append("Η σύντομη ενότητα της Κύπρου δεν πρέπει να αναλύει Παγκύπριες Εξετάσεις, Επιστημονικά Πεδία ή Πλαίσια Πρόσβασης.")
     if service != "Παιδί/έφηβος" and re.search(r"υποθετικ(?:ό|ο)\s+σενάριο[^\r\n]{0,30}15\s+ετ", text, re.IGNORECASE):
         technical.append("Η ανάλυση ενηλίκου δεν πρέπει να παρουσιάζεται ως υποθετικό σενάριο 15 ετών.")
+    name_issues = [name_issue] if name_issue else []
     return OrientationValidationResult(
-        not (wrong or unauthorized or missing or technical),
-        wrong, unauthorized, missing, technical,
+        not (wrong or unauthorized or missing or technical or name_issues),
+        wrong, unauthorized, missing, technical, name_issues,
     )
