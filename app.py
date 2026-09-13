@@ -4,7 +4,7 @@ from core.reference_loader import (
     load_short_teen_example, simple_docx_format_issues,
 )
 from core.prompts import build_orientation_source, build_orientation_prompt, split_orientation_response
-from core.docx_builder import build_orientation_docx, build_analysis_docx
+from core.docx_builder import build_orientation_docx, build_orientation_client_docx
 from core.generator import generate_analysis
 from core.validator import validate_orientation
 from core.case_state import reset_case_state, handle_pdf_upload
@@ -367,7 +367,7 @@ with st.container(border=True):
                     current_prompt = auto_prompt + correction_note
 
                 st.session_state.orientation_validation = check
-                st.session_state.orientation_docx_bytes = build_analysis_docx(name_override or chart.name, client_text)
+                st.session_state.orientation_docx_bytes = build_orientation_client_docx(service_title, name_override or chart.name, client_text)
                 st.session_state.orientation_docx_name = output_name
                 st.session_state.orientation_audit_docx_bytes = audit_text.encode("utf-8") if audit_text else None
                 if check.ok:
