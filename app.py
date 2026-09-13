@@ -37,10 +37,7 @@ TR = {
         "service_label": "Επιλεγμένη υπηρεσία",
         "service_child": "Παιδί/έφηβος",
         "service_adult": "Ενήλικας σε αλλαγή επαγγελματικής πορείας",
-        "presentation_label": "Τρόπος παρουσίασης στον πελάτη",
         "presentation_simple": "Απλή και πρακτική",
-        "presentation_detailed": "Αναλυτική με αστρολογική τεκμηρίωση",
-        "presentation_help": "Η απλή παρουσίαση δεν εμφανίζει τεχνική ορολογία στο Word του πελάτη. Η αναλυτική εμφανίζει πλανήτες, Οίκους, όψεις, orb και βαρύτητα.",
         "success_adult_simple": "Θα ζητηθεί σύντομο κείμενο 2–3 σελίδων, με καθημερινή γλώσσα, 4–6 ταλέντα, 4–5 επαγγελματικούς τομείς και σύντομη τελική σύνθεση.",
         "success_child_simple": "Θα ζητηθεί σύντομο, φιλικό κείμενο 2–3 σελίδων για έφηβο, με απλή γλώσσα και χωρίς τις εκτενείς ενότητες της αναλυτικής έκδοσης.",
         "no_extra_data": "Δεν ζητούνται πρόσθετα προσωπικά, ψυχολογικά, σχολικά ή οικονομικά δεδομένα. Η υπηρεσία παρουσιάζει μόνο συμβολικές πιθανότητες προς διερεύνηση από τον ελεγμένο χάρτη.",
@@ -52,7 +49,6 @@ TR = {
         "step3_title": "Βήμα 3 · Λήψη εντολής για ChatGPT/Claude",
         "download_command": "⬇️ Λήψη εντολής προσανατολισμού για ChatGPT/Claude",
         "upload_hint_simple": "Ανέβασε το Word στο ChatGPT ή στο Claude. Ζήτησε δύο αρχεία: το καθαρό Word του πελάτη και το εσωτερικό τεχνικό δελτίο ελέγχου.",
-        "upload_hint_detailed": "Ανέβασε αυτό το ένα Word στο ChatGPT ή στο Claude και ζήτησε να ακολουθήσει τη δεσμευτική εντολή που περιέχει.",
         "paste_expander": "Έτοιμο μήνυμα για επικόλληση στο ChatGPT/Claude",
         "auto_title": "#### 🤖 Εναλλακτικά: αυτόματη δημιουργία",
         "auto_caption": "Χρειάζεται δικό σου OpenAI API key (δεν αποθηκεύεται πουθενά). Παρακάμπτει τα βήματα αντιγραφής προς/από ChatGPT ή Claude — το αποτέλεσμα περνάει αυτόματα από τον ίδιο μηχανικό έλεγχο.",
@@ -92,10 +88,7 @@ TR = {
         "service_label": "Selected service",
         "service_child": "Child / teen",
         "service_adult": "Adult career change",
-        "presentation_label": "How it will be presented to the client",
         "presentation_simple": "Simple & practical",
-        "presentation_detailed": "Detailed with astrological documentation",
-        "presentation_help": "Simple & practical hides technical jargon from the client's Word document. Detailed shows planets, Houses, aspects, orb and weight.",
         "success_adult_simple": "A short 2–3 page text will be requested, in everyday language, with 4–6 talents, 4–5 career fields, and a brief final synthesis.",
         "success_child_simple": "A short, friendly 2–3 page text for a teen will be requested, in simple language, without the more extensive sections of the detailed version.",
         "no_extra_data": "No additional personal, psychological, school, or financial data is requested. This service only presents symbolic possibilities to explore, drawn from the checked chart.",
@@ -107,7 +100,6 @@ TR = {
         "step3_title": "Step 3 · Download the command for ChatGPT/Claude",
         "download_command": "⬇️ Download the orientation command for ChatGPT/Claude",
         "upload_hint_simple": "Upload the Word file to ChatGPT or Claude. Ask for two files: the clean client document and the internal technical audit sheet.",
-        "upload_hint_detailed": "Upload this single Word file to ChatGPT or Claude and ask it to follow the binding command it contains.",
         "paste_expander": "Ready-to-paste message for ChatGPT/Claude",
         "auto_title": "#### 🤖 Alternative: automatic generation",
         "auto_caption": "Requires your own OpenAI API key (never stored). Skips the copy/paste steps to and from ChatGPT or Claude — the result is checked automatically by the same validator.",
@@ -175,20 +167,19 @@ st.subheader(t["step2_title"])
 name_override = st.text_input(t["name_label"], value=chart.name, key='name_override')
 
 SERVICE_DISPLAY = {t["service_child"]: "Παιδί/έφηβος", t["service_adult"]: "Ενήλικας σε αλλαγή επαγγελματικής πορείας"}
-PRESENTATION_DISPLAY = {t["presentation_simple"]: "Απλή και πρακτική", t["presentation_detailed"]: "Αναλυτική με αστρολογική τεκμηρίωση"}
 YESNO_DISPLAY = {t["yes"]: "Ναι", t["no"]: "Όχι"}
 
 service_label = st.selectbox(t["service_label"], list(SERVICE_DISPLAY.keys()), key='orientation_service')
 service = SERVICE_DISPLAY[service_label]
-presentation_label = st.selectbox(
-    t["presentation_label"], list(PRESENTATION_DISPLAY.keys()),
-    key='orientation_presentation', help=t["presentation_help"],
-)
-presentation = PRESENTATION_DISPLAY[presentation_label]
+# Η "Αναλυτική με αστρολογική τεκμηρίωση" παρουσίαση αφαιρέθηκε -- στην πράξη
+# χρησιμοποιείται πάντα η "Απλή και πρακτική", οπότε κλειδώνεται σταθερά εδώ
+# αντί να εμφανίζεται ως επιλογή που μπερδεύει χωρίς λόγο.
+presentation_label = t["presentation_simple"]
+presentation = "Απλή και πρακτική"
 
-if service == "Ενήλικας σε αλλαγή επαγγελματικής πορείας" and presentation == "Απλή και πρακτική":
+if service == "Ενήλικας σε αλλαγή επαγγελματικής πορείας":
     st.success(t["success_adult_simple"])
-elif service == "Παιδί/έφηβος" and presentation == "Απλή και πρακτική":
+elif service == "Παιδί/έφηβος":
     st.success(t["success_child_simple"])
 st.caption(t["no_extra_data"])
 
@@ -221,9 +212,9 @@ if service == "Παιδί/έφηβος":
 command_text = load_orientation_command(service)
 orientation_source = build_orientation_source(chart)
 style_example_text = ""
-if service == "Ενήλικας σε αλλαγή επαγγελματικής πορείας" and presentation == "Απλή και πρακτική":
+if service == "Ενήλικας σε αλλαγή επαγγελματικής πορείας":
     style_example_text = load_short_adult_example()
-elif service == "Παιδί/έφηβος" and presentation == "Απλή και πρακτική":
+elif service == "Παιδί/έφηβος":
     style_example_text = load_short_teen_example()
 orientation_doc = build_orientation_docx(
     name_override or chart.name, service_title, context, command_text,
@@ -240,10 +231,9 @@ language_clause = (
     "Write the clean client deliverable (and, if requested, the internal technical audit sheet) entirely in English."
 )
 
-if presentation == "Απλή και πρακτική":
-    st.caption(t["upload_hint_simple"])
-    if lang == "el":
-        paste_message = """Ακολούθησε πιστά τη δεσμευτική εντολή που περιλαμβάνεται στο έγγραφο και χρησιμοποίησε αποκλειστικά τα ελεγμένα τεχνικά δεδομένα που περιέχει. Μην επινοήσεις προσωπικά, επαγγελματικά ή ψυχολογικά στοιχεία.
+st.caption(t["upload_hint_simple"])
+if lang == "el":
+    paste_message = """Ακολούθησε πιστά τη δεσμευτική εντολή που περιλαμβάνεται στο έγγραφο και χρησιμοποίησε αποκλειστικά τα ελεγμένα τεχνικά δεδομένα που περιέχει. Μην επινοήσεις προσωπικά, επαγγελματικά ή ψυχολογικά στοιχεία.
 
 Η επιλεγμένη παρουσίαση είναι «Απλή και πρακτική». Παράδωσε δύο χωριστά, ολοκληρωμένα αρχεία Word:
 1. Το καθαρό παραδοτέο του πελάτη, χωρίς πλανήτες, Οίκους, όψεις, orb ή κατηγορίες βαρύτητας.
@@ -258,8 +248,8 @@ if presentation == "Απλή και πρακτική":
 """ + language_clause + """
 
 Κάνε προσεκτικό αυτοέλεγχο πριν από την παράδοση. Ο πραγματικός validator θα εκτελεστεί στη συνέχεια μέσα στο AstroCheck Career."""
-    else:
-        paste_message = """Follow the binding command included in the document precisely, and use only the checked technical data it contains. Do not invent personal, professional, or psychological details.
+else:
+    paste_message = """Follow the binding command included in the document precisely, and use only the checked technical data it contains. Do not invent personal, professional, or psychological details.
 
 The chosen presentation is "Simple & practical". Deliver two separate, complete Word files:
 1. The clean client deliverable, without planets, Houses, aspects, orb, or weight categories.
@@ -274,26 +264,8 @@ The clean Word file must have a white background and black text, like the templa
 """ + language_clause + """
 
 Do a careful self-check before delivering. The real validator will run afterwards inside AstroCheck Career."""
-else:
-    st.caption(t["upload_hint_detailed"])
-    if lang == "el":
-        paste_message = """Ακολούθησε πιστά τη δεσμευτική εντολή που περιλαμβάνεται στο έγγραφο και χρησιμοποίησε αποκλειστικά τα ελεγμένα τεχνικά δεδομένα που περιέχει. Μην επινοήσεις προσωπικά, επαγγελματικά ή ψυχολογικά στοιχεία.
 
-Η επιλεγμένη παρουσίαση είναι «Αναλυτική με αστρολογική τεκμηρίωση». Δημιούργησε ένα ολοκληρωμένο, καλαίσθητο αρχείο Word για τον πελάτη και συμπερίλαβε στο τέλος το τεχνικό παράρτημα που απαιτεί η δεσμευτική εντολή.
-
-""" + language_clause + """
-
-Κάνε προσεκτικό αυτοέλεγχο πριν από την παράδοση. Ο πραγματικός validator θα εκτελεστεί στη συνέχεια μέσα στο AstroCheck Career."""
-    else:
-        paste_message = """Follow the binding command included in the document precisely, and use only the checked technical data it contains. Do not invent personal, professional, or psychological details.
-
-The chosen presentation is "Detailed with astrological documentation". Produce one complete, well-formatted Word file for the client, including the technical appendix the binding command requires at the end.
-
-""" + language_clause + """
-
-Do a careful self-check before delivering. The real validator will run afterwards inside AstroCheck Career."""
-
-if service == "Παιδί/έφηβος" and cyprus_school == "Ναι" and presentation == "Απλή και πρακτική":
+if service == "Παιδί/έφηβος" and cyprus_school == "Ναι":
     paste_message += (
         """
 
@@ -302,16 +274,6 @@ if service == "Παιδί/έφηβος" and cyprus_school == "Ναι" and presen
         """
 
 The child/teen is enrolled in the Cyprus education system. In the short version, add a brief "Cyprus Education System Context" section with the sub-sections "What currently applies in the system" and "What the talents symbolically suggest". Do not add separate university studies/departments for each career field, discussion questions, guidance for parents/teachers, or the 8–12 week plan. Use only recently verified official information about the education system, and do not rank or exclude any ΟΜΠ (exam subject group)."""
-    )
-elif service == "Παιδί/έφηβος" and cyprus_school == "Ναι":
-    paste_message += (
-        """
-
-Το παιδί/ο έφηβος φοιτά στο κυπριακό εκπαιδευτικό σύστημα. Πρόσθεσε πριν από την «Τελική Σύνθεση» ξεχωριστή ενότητα «Πλαίσιο Εκπαιδευτικού Συστήματος (Κύπρος)». Διαχώρισε καθαρά το «Τι ισχύει σήμερα στο σύστημα» από το «Τι δείχνουν συμβολικά τα ταλέντα». Χρησιμοποίησε αποκλειστικά πρόσφατα επαληθευμένα επίσημα στοιχεία. Μην κατατάξεις ΟΜΠ χωρίς πραγματικά δεδομένα ενδιαφέροντος, σχολικής επίδοσης ή προτίμησης μαθημάτων και μην αποκλείσεις καμία ΟΜΠ ή εκπαιδευτική Κατεύθυνση. Σε καθέναν από τους 4–6 «Επαγγελματικούς Τομείς προς Διερεύνηση», πρόσθεσε μετά τα «Ενδεικτικά επαγγέλματα» τη χωριστή ετικέτα «Ενδεικτικές πανεπιστημιακές σπουδές/Τμήματα». Δώσε αντιπροσωπευτικές διαδρομές σπουδών Κύπρου και Ελλάδας που συνδέονται με τον συγκεκριμένο τομέα, βάσει του πιο πρόσφατου επίσημου Οδηγού Παγκύπριων Εξετάσεων Πρόσβασης. Μην συγχέεις επάγγελμα, πανεπιστημιακό Τμήμα και Πλαίσιο Πρόσβασης και μην παρουσιάζεις καμία αναφορά ως εγγύηση εισαγωγής ή αποκλεισμό άλλων επιλογών. Μην προσθέσεις χωριστή ενότητα «Επίσημες πηγές» στο καθαρό παραδοτέο του πελάτη· κατέγραψε τις πηγές μόνο στο εσωτερικό τεχνικό δελτίο ελέγχου."""
-        if lang == "el" else
-        """
-
-The child/teen is enrolled in the Cyprus education system. Before the "Final Synthesis", add a separate "Cyprus Education System Context" section. Clearly separate "What currently applies in the system" from "What the talents symbolically suggest". Use only recently verified official data. Do not rank ΟΜΠ groups without real data on interests, school performance, or subject preference, and do not exclude any ΟΜΠ or educational track. In each of the 4–6 "Career Fields to Explore", add a separate label "Suggested university studies/departments" after "Suggested professions". Give representative study paths from Cyprus and Greece linked to that specific field, based on the most recent official Pancyprian Examinations Access Guide. Do not confuse profession, university department, and Access Framework, and never present any reference as a guarantee of admission or an exclusion of other choices. Do not add a separate "Official sources" section in the clean client deliverable — record sources only in the internal technical audit sheet."""
     )
 elif service == "Παιδί/έφηβος":
     paste_message += (
@@ -332,13 +294,12 @@ with st.container(border=True):
     st.markdown(t["auto_title"])
     st.caption(t["auto_caption"])
     career_api_key = st.text_input("OpenAI API key", type="password", key="career_api_key", placeholder="sk-...", label_visibility="collapsed")
-    need_audit = presentation == "Απλή και πρακτική"
     if st.button(t["auto_button"], type="primary", disabled=not career_api_key, use_container_width=True):
         with st.spinner(t["auto_spinner"]):
             try:
                 auto_prompt = build_orientation_prompt(
                     context, command_text, orientation_source, style_example_text,
-                    language_clause=language_clause, need_audit=need_audit,
+                    language_clause=language_clause, need_audit=True,
                 )
                 raw = generate_analysis(career_api_key, auto_prompt)
                 client_text, audit_text = split_orientation_response(raw)
@@ -359,18 +320,13 @@ with st.container(border=True):
             except Exception as e:
                 st.error(t["auto_error"])
                 with st.expander(t["technical_detail"]): st.code(str(e))
-    if need_audit:
-        st.caption(t["auto_need_audit_caption"])
+    st.caption(t["auto_need_audit_caption"])
 
 st.divider()
 st.subheader(t["step4_title"])
 orientation_result = st.file_uploader(t["result_uploader"], type=['docx'], key=f"orientation_result_{st.session_state.uploader_gen}")
-orientation_audit = None
-if presentation == "Απλή και πρακτική":
-    orientation_audit = st.file_uploader(t["audit_uploader"], type=['docx'], key=f"orientation_audit_{st.session_state.uploader_gen}")
-ready_to_check = bool(orientation_result) and (
-    presentation != "Απλή και πρακτική" or bool(orientation_audit)
-)
+orientation_audit = st.file_uploader(t["audit_uploader"], type=['docx'], key=f"orientation_audit_{st.session_state.uploader_gen}")
+ready_to_check = bool(orientation_result) and bool(orientation_audit)
 if st.button(t["check_button"], disabled=not ready_to_check, use_container_width=True):
     result_bytes = orientation_result.getvalue()
     result_text = docx_text(result_bytes)
