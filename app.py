@@ -55,9 +55,12 @@ TR = {
         "auto_button": "Αυτόματη δημιουργία επαγγελματικού προσανατολισμού",
         "auto_spinner": "Δημιουργείται ο επαγγελματικός προσανατολισμός…",
         "auto_ok": "✓ Πέρασε τον έλεγχο πληρότητας. Δες το αποτέλεσμα παρακάτω.",
-        "auto_fail_suffix": " Δες λεπτομέρειες παρακάτω.",
         "auto_error": "Η αυτόματη δημιουργία απέτυχε.",
         "auto_need_audit_caption": "Σε απλή παρουσίαση, το μοντέλο παράγει σε μία κλήση και τα δύο: το καθαρό παραδοτέο ΚΑΙ το εσωτερικό τεχνικό δελτίο, ξεχωριστά.",
+        "auto_attempt_spinner": "Προσπάθεια {n}/{max}: δημιουργείται ο επαγγελματικός προσανατολισμός…",
+        "auto_correcting_spinner": "Προσπάθεια {n}/{max}: το μοντέλο διορθώνει {count} πρόβλημα/προβλήματα που εντόπισε ο έλεγχος…",
+        "auto_ok_after_retries": "✓ Πέρασε τον έλεγχο πληρότητας μετά από {n} προσπάθεια/ες αυτοδιόρθωσης. Δες το αποτέλεσμα παρακάτω.",
+        "auto_exhausted": "Δοκιμάστηκαν {max} αυτόματες προσπάθειες αυτοδιόρθωσης, χωρίς επιτυχία. Χρειάζεται πλέον ανθρώπινος έλεγχος -- δες τις λεπτομέρειες παρακάτω.",
         "step4_title": "Βήμα 4 · Έλεγχος αποτελέσματος",
         "result_uploader": "Αποτέλεσμα επαγγελματικού προσανατολισμού (.docx)",
         "audit_uploader": "Εσωτερικό τεχνικό δελτίο ελέγχου (.docx) — δεν παραδίδεται στον πελάτη",
@@ -106,9 +109,12 @@ TR = {
         "auto_button": "Automatically generate the career orientation",
         "auto_spinner": "Generating the career orientation…",
         "auto_ok": "✓ Passed the completeness check. See the result below.",
-        "auto_fail_suffix": " See details below.",
         "auto_error": "Automatic generation failed.",
         "auto_need_audit_caption": "In simple presentation, the model produces both the clean deliverable AND the internal technical audit sheet in one call, kept separate.",
+        "auto_attempt_spinner": "Attempt {n}/{max}: generating the career orientation…",
+        "auto_correcting_spinner": "Attempt {n}/{max}: the model is fixing {count} issue(s) found by the check…",
+        "auto_ok_after_retries": "✓ Passed the completeness check after {n} self-correction attempt(s). See the result below.",
+        "auto_exhausted": "Tried {max} automatic self-correction attempts without success. Human review is now needed -- see the details below.",
         "step4_title": "Step 4 · Check the result",
         "result_uploader": "Career orientation result (.docx)",
         "audit_uploader": "Internal technical audit sheet (.docx) — not delivered to the client",
@@ -265,18 +271,31 @@ The clean Word file must have a white background and black text, like the templa
 
 Do a careful self-check before delivering. The real validator will run afterwards inside AstroCheck Career."""
 
+# Ενισχυτικές οδηγίες (ισχύουν πάντα, ανεξάρτητα από παιδί/έφηβο ή ενήλικα) --
+# προστέθηκαν μετά από πραγματικά περιστατικά όπου το μοντέλο έγραφε το όνομα
+# με λατινικούς χαρακτήρες ή τον τίτλο ολόκληρο σε κεφαλαία. Χτίζονται σε ΞΕΧΩΡΙΣΤΗ
+# μεταβλητή (όχι απευθείας μέσα στο paste_message) ώστε να περνούν ΚΑΙ στο κουμπί
+# αυτόματης δημιουργίας (μέσω build_orientation_prompt), όχι μόνο στο κείμενο
+# αντιγραφής για ChatGPT/Claude -- αλλιώς τα δύο μονοπάτια θα έδιναν διαφορετικό
+# αποτέλεσμα για την ίδια επιλογή.
+reinforcement_instructions = (
+    f"""Γράψε το όνομα «{name_override or chart.name}» ακριβώς όπως δόθηκε, με ελληνικούς χαρακτήρες -- μην το μεταγράψεις σε λατινικό αλφάβητο (π.χ. όχι "GAVRIELA"). Ο κύριος τίτλος του εγγράφου να είναι σε κανονική μορφή πεζών/κεφαλαίων (π.χ. «Ανάδειξη Ταλέντων και Επαγγελματικός Προσανατολισμός»), όχι ολόκληρος σε κεφαλαία."""
+    if lang == "el" else
+    f"""Write the name "{name_override or chart.name}" exactly as given, in Greek characters -- do not transliterate it into the Latin alphabet (e.g. not "GAVRIELA"). The document's main title should use normal sentence/title case, not ALL CAPS."""
+)
+
 if service == "Παιδί/έφηβος" and cyprus_school == "Ναι":
-    paste_message += (
+    reinforcement_instructions += (
         """
 
-Το παιδί/ο έφηβος φοιτά στο κυπριακό εκπαιδευτικό σύστημα. Στην απλή έκδοση πρόσθεσε σύντομη ενότητα «Πλαίσιο Εκπαιδευτικού Συστήματος (Κύπρος)» με τις υποενότητες «Τι ισχύει σήμερα στο σύστημα» και «Τι δείχνουν συμβολικά τα ταλέντα». Μην προσθέσεις χωριστές πανεπιστημιακές σπουδές/Τμήματα σε κάθε επαγγελματικό τομέα, ερωτήσεις συζήτησης, οδηγίες προς γονείς/εκπαιδευτικούς ή σχέδιο 8–12 εβδομάδων. Χρησιμοποίησε μόνο πρόσφατα επαληθευμένες επίσημες πληροφορίες για το εκπαιδευτικό σύστημα και μην κατατάξεις ή αποκλείσεις ΟΜΠ."""
+Το παιδί/ο έφηβος φοιτά στο κυπριακό εκπαιδευτικό σύστημα. Πρόσθεσε σύντομη ενότητα «Πλαίσιο Εκπαιδευτικού Συστήματος (Κύπρος)» με ΑΚΡΙΒΩΣ τις τρεις υποενότητες, με αυτούς τους ίδιους τίτλους λέξη προς λέξη: «Οι τέσσερις επιλογές στην Α΄ Λυκείου» (παρουσίασε εκεί κάθε μία από τις 4 ΟΜΠ σε μία απλή γραμμή, και πρόσθεσε ότι η επιλογή συνδέεται αργότερα με τις Κατευθύνσεις της Β΄ και Γ΄ Λυκείου και ότι οι ακριβείς κανόνες μπορεί να αλλάξουν, οπότε χρειάζεται έλεγχος του επίσημου οδηγού του Υπουργείου Παιδείας όταν γίνει η πραγματική επιλογή), «Ποιες επιλογές αξίζει να εξετάσεις» (σύνδεσε εκεί προσεκτικά τις σχετικές ΟΜΠ με τα ταλέντα, χωρίς κατάταξη ή αποκλεισμό), και «Τι χρειάζεται να θυμάσαι» (απευθύνσου ΑΠΕΥΘΕΙΑΣ στον μαθητή σε 2ο πρόσωπο -- «τα μαθήματα που ΣΟΥ αρέσουν, την επίδοσή ΣΟΥ και τα επαγγέλματα που θέλεις να γνωρίσεις καλύτερα», όχι σε 3ο πρόσωπο «στον μαθητή/του»). Μην χρησιμοποιήσεις άλλους τίτλους για αυτές τις τρεις υποενότητες. Μην προσθέσεις χωριστές πανεπιστημιακές σπουδές/Τμήματα σε κάθε επαγγελματικό τομέα, ερωτήσεις συζήτησης, οδηγίες προς γονείς/εκπαιδευτικούς ή σχέδιο 8–12 εβδομάδων. Χρησιμοποίησε μόνο πρόσφατα επαληθευμένες επίσημες πληροφορίες για το εκπαιδευτικό σύστημα και μην κατατάξεις ή αποκλείσεις ΟΜΠ."""
         if lang == "el" else
         """
 
-The child/teen is enrolled in the Cyprus education system. In the short version, add a brief "Cyprus Education System Context" section with the sub-sections "What currently applies in the system" and "What the talents symbolically suggest". Do not add separate university studies/departments for each career field, discussion questions, guidance for parents/teachers, or the 8–12 week plan. Use only recently verified official information about the education system, and do not rank or exclude any ΟΜΠ (exam subject group)."""
+The child/teen is enrolled in the Cyprus education system. Add a brief "Cyprus Education System Context" section with EXACTLY these three sub-sections, using these EXACT Greek titles word-for-word (the validator checks for them verbatim): «Οι τέσσερις επιλογές στην Α΄ Λυκείου» (present each of the 4 ΟΜΠ groups there in one simple line, and add that the choice later connects to the Tracks of the 2nd and 3rd Lyceum years, and that the exact rules may change, so the official Ministry of Education guide should be checked when the real choice is made), «Ποιες επιλογές αξίζει να εξετάσεις» (carefully connect the relevant ΟΜΠ groups with the talents there, without ranking or exclusion), and «Τι χρειάζεται να θυμάσαι» (address the student DIRECTLY in the 2nd person -- "the courses YOU like, YOUR performance, and the professions you want to get to know better" -- not in the 3rd person). Do not use any other titles for these three sub-sections. Do not add separate university studies/departments for each career field, discussion questions, guidance for parents/teachers, or the 8–12 week plan. Use only recently verified official information about the education system, and do not rank or exclude any ΟΜΠ (exam subject group)."""
     )
 elif service == "Παιδί/έφηβος":
-    paste_message += (
+    reinforcement_instructions += (
         """
 
 Το παιδί/ο έφηβος δεν φοιτά στο κυπριακό εκπαιδευτικό σύστημα. Παράλειψε την ενότητα για τις ΟΜΠ και τις εκπαιδευτικές διαδρομές της Κύπρου και μην υποθέσεις άλλο εκπαιδευτικό σύστημα."""
@@ -285,6 +304,8 @@ elif service == "Παιδί/έφηβος":
 
 The child/teen is NOT enrolled in the Cyprus education system. Omit the section on ΟΜΠ groups and Cyprus education pathways, and do not assume any other education system."""
     )
+
+paste_message += "\n\n" + reinforcement_instructions
 
 with st.expander(t["paste_expander"], expanded=True):
     st.code(paste_message, language=None)
@@ -300,23 +321,62 @@ with st.container(border=True):
                 auto_prompt = build_orientation_prompt(
                     context, command_text, orientation_source, style_example_text,
                     language_clause=language_clause, need_audit=True,
+                    extra_instructions=reinforcement_instructions,
                 )
-                raw = generate_analysis(career_api_key, auto_prompt)
-                client_text, audit_text = split_orientation_response(raw)
-                orientation_personal = {"Όνομα": name_override or chart.name}
-                check = validate_orientation(
-                    chart, client_text, orientation_personal, service,
-                    presentation_mode=presentation, audit_text=audit_text,
-                    cyprus_education=(cyprus_school == "Ναι"), format_issues=[],
-                )
+                MAX_AUTO_ATTEMPTS = 3
+                current_prompt = auto_prompt
+                previous_raw = None
+                check = None
+                client_text = audit_text = None
+                for attempt in range(1, MAX_AUTO_ATTEMPTS + 1):
+                    if attempt == 1:
+                        spinner_msg = t["auto_attempt_spinner"].format(n=attempt, max=MAX_AUTO_ATTEMPTS)
+                    else:
+                        spinner_msg = t["auto_correcting_spinner"].format(
+                            n=attempt, max=MAX_AUTO_ATTEMPTS, count=len(check.details_lines())
+                        )
+                    with st.spinner(spinner_msg):
+                        raw = generate_analysis(career_api_key, current_prompt)
+                    client_text, audit_text = split_orientation_response(raw)
+                    orientation_personal = {"Όνομα": name_override or chart.name}
+                    check = validate_orientation(
+                        chart, client_text, orientation_personal, service,
+                        presentation_mode=presentation, audit_text=audit_text,
+                        cyprus_education=(cyprus_school == "Ναι"), format_issues=[],
+                    )
+                    if check.ok or attempt == MAX_AUTO_ATTEMPTS:
+                        break
+                    # Ο επόμενος γύρος δεν ξαναγράφει τα πάντα από την αρχή --
+                    # στέλνει πίσω στο μοντέλο ό,τι μόλις έγραψε, μαζί με τη
+                    # συγκεκριμένη λίστα προβλημάτων που εντόπισε ο πραγματικός
+                    # validator, και του ζητά να διορθώσει ΜΟΝΟ αυτά. Αυτό είναι
+                    # που πλησιάζει τον στόχο "χωρίς ανθρώπινη παρέμβαση".
+                    issues_list = "\n".join(f"- {line}" for line in check.details_lines())
+                    correction_note = (
+                        f"\n\nΗ ΠΡΟΗΓΟΥΜΕΝΗ ΣΟΥ ΑΠΑΝΤΗΣΗ (προς διόρθωση):\n{raw}\n\n"
+                        f"Ο ΠΡΑΓΜΑΤΙΚΟΣ ΜΗΧΑΝΙΚΟΣ ΕΛΕΓΧΟΣ ΒΡΗΚΕ ΤΑ ΕΞΗΣ ΠΡΟΒΛΗΜΑΤΑ:\n{issues_list}\n\n"
+                        "Ξαναγράψε ολόκληρη την απάντηση (με την ίδια ακριβώς μορφή/δείκτες όπως πριν), "
+                        "διορθώνοντας ΜΟΝΟ αυτά τα συγκεκριμένα προβλήματα. Μην αλλάξεις τίποτα άλλο που "
+                        "ήδη ήταν σωστό."
+                        if lang == "el" else
+                        f"\n\nYOUR PREVIOUS ANSWER (to be corrected):\n{raw}\n\n"
+                        f"THE REAL ENGINEERING CHECK FOUND THESE ISSUES:\n{issues_list}\n\n"
+                        "Rewrite the entire answer (using the exact same format/markers as before), "
+                        "fixing ONLY these specific issues. Do not change anything else that was already correct."
+                    )
+                    current_prompt = auto_prompt + correction_note
+
                 st.session_state.orientation_validation = check
                 st.session_state.orientation_docx_bytes = build_analysis_docx(name_override or chart.name, client_text)
                 st.session_state.orientation_docx_name = output_name
                 st.session_state.orientation_audit_docx_bytes = audit_text.encode("utf-8") if audit_text else None
                 if check.ok:
-                    st.success(t["auto_ok"])
+                    if attempt == 1:
+                        st.success(t["auto_ok"])
+                    else:
+                        st.success(t["auto_ok_after_retries"].format(n=attempt))
                 else:
-                    st.error(check.summary() + t["auto_fail_suffix"])
+                    st.error(t["auto_exhausted"].format(max=MAX_AUTO_ATTEMPTS))
             except Exception as e:
                 st.error(t["auto_error"])
                 with st.expander(t["technical_detail"]): st.code(str(e))
