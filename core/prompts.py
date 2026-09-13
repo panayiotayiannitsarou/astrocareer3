@@ -11,7 +11,7 @@ ORIENTATION_CLIENT_MARKER = "===CLIENT_DELIVERABLE==="
 
 def build_orientation_prompt(context, command_text, orientation_source,
                               style_example_text="", language_clause="",
-                              need_audit=False):
+                              need_audit=False, extra_instructions=""):
     """Καθαρό text prompt για απευθείας κλήση στο μοντέλο (χωρίς να χρειάζεται
     το ενδιάμεσο βήμα «κατέβασε Word -> επικόλλησε σε ChatGPT/Claude -> ανέβασε
     το αποτέλεσμα»). Χρησιμοποιεί ακριβώς τα ίδια υλικά με το
@@ -37,6 +37,8 @@ def build_orientation_prompt(context, command_text, orientation_source,
     parts.append(f"ΕΛΕΓΜΕΝΗ ΤΕΧΝΙΚΗ ΑΝΑΛΥΣΗ — ΜΟΝΑΔΙΚΗ ΑΣΤΡΟΛΟΓΙΚΗ ΠΗΓΗ\n{orientation_source}")
     if language_clause.strip():
         parts.append(language_clause)
+    if extra_instructions.strip():
+        parts.append(extra_instructions)
     if need_audit:
         parts.append(
             "ΜΟΡΦΗ ΑΠΑΝΤΗΣΗΣ (ΥΠΟΧΡΕΩΤΙΚΗ)\n"
