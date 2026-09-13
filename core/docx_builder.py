@@ -137,11 +137,20 @@ def _add_summary_box(doc, lines):
     doc.add_paragraph()  # μικρό κενό μετά το πλαίσιο, πριν τον επόμενο Οίκο
 
 
-def _render_markdown_body(d, text):
+_NUMBERED_SUBHEADING_RE = re.compile(r'^\d+\.\s+(.+)$')
+
+
+def _render_markdown_body(d, text, numbered_headings_as_bullets=False):
     """Κοινή λογική απόδοσης markdown-like κειμένου σε παραγράφους/επικεφαλίδες
     Word -- εξήχθη από το build_analysis_docx ώστε να τη μοιράζεται και το
     build_orientation_client_docx, χωρίς να αλλάξει καθόλου η υπάρχουσα
     συμπεριφορά του build_analysis_docx.
+
+    numbered_headings_as_bullets: όταν True (μόνο το build_orientation_client_docx
+    το ζητά -- ΠΟΤΕ το build_analysis_docx, ώστε η πλήρης ανάλυση 12 Οίκων να
+    μην επηρεαστεί καθόλου), μια επικεφαλίδα επιπέδου '### Ν. Τίτλος' (π.χ. οι
+    αριθμημένοι επαγγελματικοί τομείς) αποδίδεται ως bold bullet χωρίς τον
+    αριθμό, αντί για επικεφαλίδα -- πιο λιτή εμφάνιση.
     """
     lines = text.splitlines()
     i = 0
@@ -167,7 +176,15 @@ def _render_markdown_body(d, text):
 
         if not line:
             d.add_paragraph(); i += 1; continue
-        if line.startswith('### '): _add_formatted_runs(d.add_heading('',3), line[4:])
+        if line.startswith('### '):
+            heading_text = line[4:]
+            m = _NUMBERED_SUBHEADING_RE.match(heading_text) if numbered_headings_as_bullets else None
+            if m:
+                bullet_p = d.add_paragraph(style='List Bullet')
+                run = bullet_p.add_run(m.group(1).replace('**', ''))
+                run.bold = True
+            else:
+                _add_formatted_runs(d.add_heading('',3), heading_text)
         elif line.startswith('## '): _add_formatted_runs(d.add_heading('',2), line[3:])
         elif line.startswith('# '): _add_formatted_runs(d.add_heading('',1), line[2:])
         elif line.startswith(('- ','• ')): _add_formatted_runs(d.add_paragraph(style='List Bullet'), line[2:])
@@ -208,19 +225,43 @@ def build_orientation_client_docx(doc_title, subtitle_name, analysis):
     πραγματικό τίτλο υπηρεσίας ως παράμετρο αντί να τον σταθεροποιεί, και
     (2) κρατά κάθε επικεφαλίδα μαύρη, ώστε το ίδιο το εργαλείο να μην
     παραβιάζει ποτέ τον κανόνα που ελέγχει.
-    """
-    d=Document(); sec=d.sections[0]; sec.top_margin=Inches(.75); sec.bottom_margin=Inches(.75); sec.left_margin=Inches(.9); sec.right_margin=Inches(.9)
-    d.styles['Normal'].font.name='Aptos'; d.styles['Normal'].font.size=Pt(11)
-    for s,size in [('Title',24),('Heading 1',16),('Heading 2',13),('Heading 3',11.5)]:
-        d.styles[s].font.name='Aptos Display'; d.styles[s].font.size=Pt(size); d.styles[s].font.color.rgb=RGBColor(0,0,0)
-    p=d.add_paragraph(style='Title'); p.alignment=WD_ALIGN_PARAGRAPH.CENTER; p.add_run(doc_title)
-    s=d.add_paragraph(); s.alignment=WD_ALIGN_PARAGRAPH.CENTER; s.add_run(subtitle_name).bold=True
 
+    Μορφή (σύμφωνα με ρητή προδιαγραφή): Letter, κατακόρυφος, Aptos ~10.5pt,
+    κεντρικός τίτλος 18pt σε δύο γραμμές (τίτλος υπηρεσίας + όνομα), αρκετό
+    λευκό κενό πριν το κυρίως κείμενο, ΧΩΡΙΣ αριθμό σελίδας, χωρίς πίνακες/
+    εικόνες/κεφαλίδες-υποσέλιδα. Οι επαγγελματικοί τομείς κρατούν την
+    αρίθμησή τους 1-5 όπως γράφτηκαν (καμία μετατροπή σε bullet).
+    """
+    d=Document()
+    sec=d.sections[0]
+    sec.page_width=Inches(8.5); sec.page_height=Inches(11)  # Letter, ρητά (όχι A4 από default locale)
+    sec.top_margin=Inches(.8); sec.bottom_margin=Inches(.8); sec.left_margin=Inches(.9); sec.right_margin=Inches(.9)
+    d.styles['Normal'].font.name='Aptos'; d.styles['Normal'].font.size=Pt(10.5)
+    d.styles['Normal'].paragraph_format.space_after=Pt(4)
+    for s,size,before,after in [('Heading 1',14,10,4),('Heading 2',12,9,3),('Heading 3',11,7,2)]:
+        d.styles[s].font.name='Aptos Display'; d.styles[s].font.size=Pt(size); d.styles[s].font.color.rgb=RGBColor(0,0,0)
+        d.styles[s].paragraph_format.space_before=Pt(before); d.styles[s].paragraph_format.space_after=Pt(after)
+    for s in ('List Bullet','List Number'):
+        d.styles[s].font.size=Pt(10.5); d.styles[s].paragraph_format.space_after=Pt(3)
+    # Σκόπιμα ΔΕΝ χρησιμοποιούμε το ενσωματωμένο style='Title' του Word: έχει
+    # από προεπιλογή μια οριζόντια γραμμή (border) από κάτω, η οποία δίνει πιο
+    # "branded"/βαρύ ύφος από αυτό που προτιμήθηκε (λιτός, απλός τίτλος).
+    # Χειροκίνητη μορφοποίηση = πλήρης έλεγχος, χωρίς κρυφά στοιχεία προτύπου.
+    p=d.add_paragraph(); p.alignment=WD_ALIGN_PARAGRAPH.CENTER; p.paragraph_format.space_after=Pt(2)
+    title_run=p.add_run(doc_title); title_run.bold=True; title_run.font.name='Aptos Display'
+    title_run.font.size=Pt(18); title_run.font.color.rgb=RGBColor(0,0,0)
+
+    # Δεύτερη γραμμή του ίδιου κεντρικού τίτλου (το όνομα) -- ίδιο μέγεθος
+    # 18pt όπως ζητήθηκε, με αρκετό λευκό κενό μετά πριν ξεκινήσει το σώμα.
+    s=d.add_paragraph(); s.paragraph_format.space_after=Pt(18); s.alignment=WD_ALIGN_PARAGRAPH.CENTER
+    name_run=s.add_run(subtitle_name); name_run.bold=True; name_run.font.name='Aptos Display'
+    name_run.font.size=Pt(18); name_run.font.color.rgb=RGBColor(0,0,0)
+
+    # Αρίθμηση σελίδας στο footer (π.χ. "1 / 2") -- ζητήθηκε ρητά να ξαναμπεί.
     footer_p = sec.footer.paragraphs[0] if sec.footer.paragraphs else sec.footer.add_paragraph()
     footer_p.alignment = WD_ALIGN_PARAGRAPH.CENTER
     _add_page_number_field(footer_p)
 
-    d.add_paragraph()
     _render_markdown_body(d, analysis)
     bio=BytesIO(); d.save(bio); return bio.getvalue()
 
