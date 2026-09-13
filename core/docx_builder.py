@@ -137,21 +137,14 @@ def _add_summary_box(doc, lines):
     doc.add_paragraph()  # μικρό κενό μετά το πλαίσιο, πριν τον επόμενο Οίκο
 
 
-def build_analysis_docx(title_name, analysis):
-    d=Document(); sec=d.sections[0]; sec.top_margin=Inches(.75); sec.bottom_margin=Inches(.75); sec.left_margin=Inches(.8); sec.right_margin=Inches(.8)
-    d.styles['Normal'].font.name='Aptos'; d.styles['Normal'].font.size=Pt(10.5)
-    for s,size,color in [('Title',26,'1D3A34'),('Heading 1',18,'1D3A34'),('Heading 2',14,'5B7F6A'),('Heading 3',12,'5B7F6A')]:
-        d.styles[s].font.name='Aptos Display'; d.styles[s].font.size=Pt(size); d.styles[s].font.color.rgb=RGBColor.from_string(color)
-    p=d.add_paragraph(style='Title'); p.alignment=WD_ALIGN_PARAGRAPH.CENTER; p.add_run('Πλήρης Αστρολογική Ανάλυση')
-    s=d.add_paragraph(); s.alignment=WD_ALIGN_PARAGRAPH.CENTER; s.add_run(title_name).bold=True
-
-    footer_p = sec.footer.paragraphs[0] if sec.footer.paragraphs else sec.footer.add_paragraph()
-    footer_p.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    _add_page_number_field(footer_p)
-
-    lines = analysis.splitlines()
+def _render_markdown_body(d, text):
+    """Κοινή λογική απόδοσης markdown-like κειμένου σε παραγράφους/επικεφαλίδες
+    Word -- εξήχθη από το build_analysis_docx ώστε να τη μοιράζεται και το
+    build_orientation_client_docx, χωρίς να αλλάξει καθόλου η υπάρχουσα
+    συμπεριφορά του build_analysis_docx.
+    """
+    lines = text.splitlines()
     i = 0
-    first_house_seen = False
     while i < len(lines):
         raw = lines[i]
         line = raw.strip()
@@ -162,23 +155,6 @@ def build_analysis_docx(title_name, analysis):
                 break
         core_plain = core.replace('**', '').lstrip('-•* ').strip()
 
-        # Το παλιό υποχρεωτικό page break πριν από κάθε Οίκο δημιουργούσε
-        # κενές ή σχεδόν κενές σελίδες όταν το πλαίσιο σύνοψης του προηγούμενου
-        # Οίκου μεταφερόταν ολόκληρο στην επόμενη σελίδα. Οι οδηγίες ζητούν νέα
-        # σελίδα «κατά προτίμηση», όχι εις βάρος της σελιδοποίησης. Αφήνουμε
-        # πλέον φυσική ροή μεταξύ Οίκων και κρατάμε μόνο το Παράρτημα σε νέα
-        # σελίδα.
-        if _HOUSE_HEADING_RE.match(core_plain):
-            first_house_seen = True
-        elif _APPENDIX_HEADING_RE.match(core_plain):
-            # Φυσική ροή και εδώ: ένα ρητό page break μπορεί να δημιουργήσει
-            # ολόκληρη κενή σελίδα όταν το προηγούμενο περιεχόμενο έχει ήδη
-            # γεμίσει ακριβώς την τρέχουσα σελίδα.
-            pass
-
-        # Πλαίσιο σύνοψης: μόλις εντοπιστεί η πρώτη ετικέτα, μαζεύουμε τις
-        # επόμενες γραμμές μέχρι την πρώτη κενή γραμμή και τις ρίχνουμε σε
-        # έναν πίνακα-πλαίσιο αντί για απλές παραγράφους.
         if _SUMMARY_START_RE.match(core_plain):
             box_lines = [line]
             j = i + 1
@@ -200,6 +176,52 @@ def build_analysis_docx(title_name, analysis):
             if m: _add_formatted_runs(d.add_paragraph(style='List Number'), m.group(2))
             else: _add_formatted_runs(d.add_paragraph(), line)
         i += 1
+
+
+def build_analysis_docx(title_name, analysis):
+    d=Document(); sec=d.sections[0]; sec.top_margin=Inches(.75); sec.bottom_margin=Inches(.75); sec.left_margin=Inches(.8); sec.right_margin=Inches(.8)
+    d.styles['Normal'].font.name='Aptos'; d.styles['Normal'].font.size=Pt(10.5)
+    for s,size,color in [('Title',26,'1D3A34'),('Heading 1',18,'1D3A34'),('Heading 2',14,'5B7F6A'),('Heading 3',12,'5B7F6A')]:
+        d.styles[s].font.name='Aptos Display'; d.styles[s].font.size=Pt(size); d.styles[s].font.color.rgb=RGBColor.from_string(color)
+    p=d.add_paragraph(style='Title'); p.alignment=WD_ALIGN_PARAGRAPH.CENTER; p.add_run('Πλήρης Αστρολογική Ανάλυση')
+    s=d.add_paragraph(); s.alignment=WD_ALIGN_PARAGRAPH.CENTER; s.add_run(title_name).bold=True
+
+    footer_p = sec.footer.paragraphs[0] if sec.footer.paragraphs else sec.footer.add_paragraph()
+    footer_p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    _add_page_number_field(footer_p)
+
+    _render_markdown_body(d, analysis)
+    bio=BytesIO(); d.save(bio); return bio.getvalue()
+
+
+def build_orientation_client_docx(doc_title, subtitle_name, analysis):
+    """Καθαρό Word για τον ΠΕΛΑΤΗ της υπηρεσίας προσανατολισμού -- ξεχωριστό
+    από το build_analysis_docx επίτηδες.
+
+    Ο Κανόνας 0Γ/0Δ της δεσμευτικής εντολής απαιτεί ρητά «λευκό φόντο και
+    μαύρο κείμενο» στο καθαρό παραδοτέο της «Απλής και πρακτικής»
+    παρουσίασης, χωρίς καμία χρωματική επισήμανση. Το build_analysis_docx
+    βάφει τίτλους/επικεφαλίδες σκούρο πράσινο (κατάλληλο για την πλήρη
+    αστρολογική ανάλυση, που ΔΕΝ έχει τέτοιον περιορισμό χρώματος) και έχει
+    πάντα σταθερό τίτλο "Πλήρης Αστρολογική Ανάλυση" -- λάθος και τα δύο για
+    το παραδοτέο προσανατολισμού. Αυτή η συνάρτηση: (1) δέχεται τον
+    πραγματικό τίτλο υπηρεσίας ως παράμετρο αντί να τον σταθεροποιεί, και
+    (2) κρατά κάθε επικεφαλίδα μαύρη, ώστε το ίδιο το εργαλείο να μην
+    παραβιάζει ποτέ τον κανόνα που ελέγχει.
+    """
+    d=Document(); sec=d.sections[0]; sec.top_margin=Inches(.75); sec.bottom_margin=Inches(.75); sec.left_margin=Inches(.9); sec.right_margin=Inches(.9)
+    d.styles['Normal'].font.name='Aptos'; d.styles['Normal'].font.size=Pt(11)
+    for s,size in [('Title',24),('Heading 1',16),('Heading 2',13),('Heading 3',11.5)]:
+        d.styles[s].font.name='Aptos Display'; d.styles[s].font.size=Pt(size); d.styles[s].font.color.rgb=RGBColor(0,0,0)
+    p=d.add_paragraph(style='Title'); p.alignment=WD_ALIGN_PARAGRAPH.CENTER; p.add_run(doc_title)
+    s=d.add_paragraph(); s.alignment=WD_ALIGN_PARAGRAPH.CENTER; s.add_run(subtitle_name).bold=True
+
+    footer_p = sec.footer.paragraphs[0] if sec.footer.paragraphs else sec.footer.add_paragraph()
+    footer_p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    _add_page_number_field(footer_p)
+
+    d.add_paragraph()
+    _render_markdown_body(d, analysis)
     bio=BytesIO(); d.save(bio); return bio.getvalue()
 
 

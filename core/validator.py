@@ -39,6 +39,7 @@ ValidationResult.ok είναι False.
 
 from __future__ import annotations
 import re
+import unicodedata
 from dataclasses import dataclass, field
 
 from .astrology import RULERS, OPPOSITE_ANGLE
@@ -1079,6 +1080,56 @@ def _simple_presentation_technical_terms(text: str) -> list[str]:
     return [label for label, pattern in patterns.items() if re.search(pattern, text, re.IGNORECASE)]
 
 
+_GREEK_TO_LATIN = {
+    "α": "a", "β": "v", "γ": "g", "δ": "d", "ε": "e", "ζ": "z", "η": "i",
+    "θ": "th", "ι": "i", "κ": "k", "λ": "l", "μ": "m", "ν": "n", "ξ": "x",
+    "ο": "o", "π": "p", "ρ": "r", "σ": "s", "ς": "s", "τ": "t", "υ": "y",
+    "φ": "f", "χ": "ch", "ψ": "ps", "ω": "o",
+}
+
+
+def _strip_greek_diacritics(text: str) -> str:
+    """Αφαιρεί τόνους/διαλυτικά (π.χ. «Γαβριέλα» -> «Γαβριελα») για χαλαρή
+    σύγκριση, χωρίς να αγγίζει τα ίδια τα γράμματα."""
+    decomposed = unicodedata.normalize("NFD", text)
+    return "".join(ch for ch in decomposed if unicodedata.category(ch) != "Mn")
+
+
+def _rough_transliterate(text: str) -> str:
+    """Πρόχειρη μεταγραφή ελληνικών σε λατινικά, μόνο για να εντοπίσει αν το
+    μοντέλο έγραψε ένα ελληνικό όνομα με λατινικούς χαρακτήρες (π.χ. "GAVRIELA")."""
+    stripped = _strip_greek_diacritics(text).lower()
+    return "".join(_GREEK_TO_LATIN.get(ch, ch) for ch in stripped)
+
+
+def _name_consistency_issue(personal: dict | None, text: str) -> str | None:
+    """Ελέγχει ότι το δηλωμένο όνομα εμφανίζεται στο παραδοτέο ακριβώς όπως
+    δόθηκε (με τόνους, με ελληνικούς χαρακτήρες) -- όχι μόνο ότι *κάποιο*
+    όνομα υπάρχει. Πραγματικό περιστατικό: το μοντέλο έγραψε "GAVRIELA" ή
+    "Γαβριελα" (χωρίς τόνο) αντί για το δηλωμένο "Γαβριέλα"· ο validator δεν
+    το έπιανε καθόλου πριν, οπότε χρειαζόταν πάντα τελευταίο ανθρώπινο έλεγχο.
+    """
+    if not personal:
+        return None
+    expected = (personal.get("Όνομα") or "").strip()
+    if not expected:
+        return None
+    if expected in text:
+        return None
+    stripped_expected = _strip_greek_diacritics(expected)
+    stripped_text = _strip_greek_diacritics(text)
+    if stripped_expected and stripped_expected in stripped_text:
+        return (
+            f"Το όνομα εμφανίζεται στο έγγραφο χωρίς τους σωστούς τόνους/διαλυτικά "
+            f"(αναμενόταν «{expected}»)."
+        )
+    translit_expected = _rough_transliterate(expected)
+    translit_text = _rough_transliterate(text)
+    if translit_expected and len(translit_expected) >= 3 and translit_expected in translit_text:
+        return f"Το όνομα «{expected}» φαίνεται να γράφτηκε με λατινικούς χαρακτήρες αντί για ελληνικούς."
+    return f"Το δηλωμένο όνομα «{expected}» δεν εντοπίστηκε καθόλου μέσα στο έγγραφο."
+
+
 def validate_orientation(chart, text: str, personal: dict | None = None,
                          service: str = "", presentation_mode: str = "Αναλυτική με αστρολογική τεκμηρίωση",
                          audit_text: str | None = None,
@@ -1163,6 +1214,9 @@ def validate_orientation(chart, text: str, personal: dict | None = None,
     wrong=_location_claim_errors(chart,text)
     unauthorized=_unauthorized_personal_claims(personal,text)
     technical=_orientation_technical_mismatches(chart,text)
+    name_issue = _name_consistency_issue(personal, text)
+    if name_issue:
+        technical.append(name_issue)
     if presentation_mode == "Απλή και πρακτική":
         if format_issues:
             technical.append(
